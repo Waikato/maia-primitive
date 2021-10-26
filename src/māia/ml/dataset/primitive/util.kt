@@ -1,36 +1,144 @@
 package māia.ml.dataset.primitive
 
-import māia.ml.dataset.DataColumnHeader
-import māia.ml.dataset.DataRow
-import māia.util.collect
-import māia.util.map
-
-
-/*
- * Utility functions for working with primitive data-sets.
+/**
+ * TODO
  */
+
+import māia.ml.dataset.WithIndexableRows
+import māia.ml.dataset.error.MissingValue
+import māia.ml.dataset.primitive.error.UnsupportedDataTypeError
+import māia.ml.dataset.primitive.error.UnsupportedRepresentationError
+import māia.ml.dataset.primitive.type.PrimitiveDataRepresentation
+import māia.ml.dataset.primitive.type.PrimitiveNominal
+import māia.ml.dataset.primitive.type.PrimitiveNumeric
+import māia.ml.dataset.primitive.type.PrimitiveUntyped
+import māia.ml.dataset.type.DataRepresentation
+import māia.ml.dataset.type.DataType
+import māia.ml.dataset.type.EntropicRepresentation
+import māia.ml.dataset.type.standard.Nominal
+import māia.ml.dataset.type.standard.NominalCanonicalRepresentation
+import māia.ml.dataset.type.standard.NominalIndexRepresentation
+import māia.ml.dataset.type.standard.Numeric
+import māia.ml.dataset.type.standard.NumericCanonicalRepresentation
+import māia.ml.dataset.type.standard.UntypedData
+import māia.ml.dataset.type.standard.UntypedRepresentation
+import māia.util.assertType
+import māia.util.ensureIndexInRange
 
 /**
- * Captures a data-column header as a primitive instance.
- *
- * @receiver    The data-column header to capture.
- * @return      The receiving header if it already is primitive, or
- *              a primitive copy if it's not.
+ * TODO
  */
-fun DataColumnHeader.toPrimitive() : PrimitiveDataColumnHeader {
-    if (this is PrimitiveDataColumnHeader) return this
-    return PrimitiveDataColumnHeader(name, type, isTarget)
+internal fun <T> newPrimitiveRepresentation(
+    representation: DataRepresentation<*, *, T>,
+    supportsMissingValues: Boolean
+): PrimitiveDataRepresentation<*, *, T, *> {
+    val type = representation.dataType
+    return when(type) {
+        is Nominal<*, *, *, *> -> {
+            val newType = PrimitiveNominal(supportsMissingValues, *type.toTypedArray())
+            when (representation) {
+                is NominalCanonicalRepresentation<*, *> -> newType.canonicalRepresentation
+                is NominalIndexRepresentation<*, *> -> newType.indexRepresentation
+                is EntropicRepresentation<*, *> -> newType.entropicRepresentation
+                else -> throw UnsupportedRepresentationError(representation)
+            }
+        }
+        is Numeric<*, *> -> {
+            val newType = PrimitiveNumeric(supportsMissingValues)
+            when (representation) {
+                is NumericCanonicalRepresentation -> newType.canonicalRepresentation
+                else -> throw UnsupportedRepresentationError(representation)
+            }
+        }
+        is UntypedData<*, *> -> {
+            val newType = PrimitiveUntyped(supportsMissingValues)
+            when (representation) {
+                is UntypedRepresentation<*, *> -> newType.canonicalRepresentation
+                else -> throw UnsupportedRepresentationError(representation)
+            }
+        }
+        else -> throw UnsupportedDataTypeError(type)
+    } as PrimitiveDataRepresentation<*, *, T, *>
 }
 
 /**
- * Creates a primitive data-row that is a copy of the receiver.
- *
- * @receiver    The data-row to copy.
- * @return      The primitive data-row copy.
+ * TODO
  */
-fun DataRow.primitiveCopy() : PrimitiveDataRow {
-    return PrimitiveDataRow(
-            iterateColumnHeaders().map { it.toPrimitive() }.collect(ArrayList()),
-            iterateColumns().collect(ArrayList())
-    )
+inline fun <R> WithIndexableRows<*>.ensureRowIndex(
+    rowIndex : Int,
+    includeSize: Boolean = false,
+    crossinline block: () -> R
+): R = ensureIndexInRange(rowIndex, numRows, includeSize) { block() }
+
+/**
+ * TODO
+ */
+inline fun <R> WithIndexableRows<*>.ensureRowsIndices(
+    startIndex: Int,
+    count: Int,
+    crossinline block: () -> R
+): R = ensureRowIndex(startIndex) {
+    ensureIndexInRange(
+        startIndex + count,
+        numRows,
+        true,
+        { "'count' must not extend beyond the end of the column. " }
+    ) {
+        block()
+    }
+}
+
+/**
+ * TODO
+ */
+internal inline fun <I> newDataStore(
+    representation: PrimitiveDataRepresentation<*, *, *, I>,
+    clearSentinel : I,
+    initialCapacity: Int = 16,
+    initialSize: Int = 0,
+    noinline initial: (Int) -> I = { clearSentinel }
+): PrimitiveDataStore<I> {
+    return when (representation.self.dataType) {
+        is PrimitiveNominal -> PrimitiveDataStore(PrimitiveIntArray(IntArray(initialCapacity, initial as ((Int) -> Int))), clearSentinel as Int, initialSize)
+        is PrimitiveNumeric -> PrimitiveDataStore(PrimitiveDoubleArray(DoubleArray(initialCapacity, initial as ((Int) -> Double))), clearSentinel as Double, initialSize)
+        else -> PrimitiveDataStore(PrimitiveObjectArray(Array(initialCapacity, initial)), clearSentinel, initialSize)
+    } as PrimitiveDataStore<I>
+}
+
+/**
+ * TODO
+ */
+internal inline fun <I, X> handleMissingOnSet(
+    convert: (X) -> I,
+    clearSentinel: I,
+    data: () -> X
+): I {
+    return try {
+        convert(data())
+    } catch (e: MissingValue) {
+        clearSentinel
+    }
+}
+
+/**
+ * TODO
+ */
+internal inline fun <I, X> PrimitiveDataRepresentation<*, *, out X, in I>.handleMissingOnGet(
+    value: I,
+    test: (I) -> Boolean,
+    block: (I) -> X
+): X {
+    if (test(value)) throw MissingValue(this.self)
+    return block(value)
+}
+
+/**
+ * TODO
+ */
+internal inline fun <Self, D: DataType<D, *>, T, I, O> PrimitiveDataRepresentation<Self, D, T, I>.convertValue(
+    value: O,
+    fromRepresentation : DataRepresentation<*, D, O>
+): T where Self: DataRepresentation<Self, D, T>, Self: PrimitiveDataRepresentation<Self, D, T, I> {
+    val primRepr = assertType<PrimitiveDataRepresentation<*, D, O, I>>(fromRepresentation)
+    return convertOut(primRepr.convertIn(value))
 }

@@ -1,53 +1,82 @@
 package māia.ml.dataset.primitive
 
-import māia.ml.dataset.DataColumnHeader
+import māia.ml.dataset.headers.header.DataColumnHeader
 import māia.ml.dataset.mutable.MutableDataColumn
 import māia.ml.dataset.mutable.WithMutableRowStructure
-import māia.ml.dataset.util.convertToInternalUnchecked
-import māia.ml.dataset.util.isValidInternalUnchecked
-import māia.util.collect
-import māia.util.map
+import māia.ml.dataset.primitive.type.PrimitiveDataRepresentation
+import māia.ml.dataset.type.DataRepresentation
 
 /**
- * TODO: What class does.
- *
- * @author Corey Sterling (csterlin at waikato dot ac dot nz)
+ * TODO
  */
-class PrimitiveDataColumn internal constructor(
-        override val header : DataColumnHeader,
-        private val values : ArrayList<Any?>
-) : MutableDataColumn, WithMutableRowStructure<Any?, Any?> {
+class PrimitiveDataColumn<I, X> internal constructor(
+    private val primitiveDataRepresentation : PrimitiveDataRepresentation<*, *, X, I>,
+    private val storage: PrimitiveDataStore<I>
+): MutableDataColumn<X>, WithMutableRowStructure<X, X> {
 
-    constructor(header : DataColumnHeader, values : Iterator<Any?>) : this(
-            header.toPrimitive(),
-            values.map { header.type.convertToInternalUnchecked(it) }.collect(ArrayList())
+    constructor(
+        representation : PrimitiveDataRepresentation<*, *, X, I>,
+        supportMissingValues: Boolean = representation.self.dataType.supportsMissingValues,
+        initialCapacity: Int = 16
+    ): this(
+        newPrimitiveRepresentation(representation.self, supportMissingValues) as PrimitiveDataRepresentation<*, *, X, I>,
+        initialCapacity
     )
 
+    internal constructor(
+        representation : PrimitiveDataRepresentation<*, *, X, I>,
+        initialCapacity: Int
+    ): this(
+        representation,
+        newDataStore(representation, representation.clearSentinel(), initialCapacity)
+    )
+
+    private val dataRepresentation = primitiveDataRepresentation.self as DataRepresentation<*, *, X>
+
     override val numRows : Int
-        get() = values.size
+        get() = storage.size
 
-    override fun getRow(rowIndex : Int) : Any? {
-        return values[rowIndex]
+    override val header : DataColumnHeader
+        get() = primitiveDataRepresentation.self.dataType.header
+
+    override fun getRow(rowIndex : Int) : X = ensureRowIndex(rowIndex) {
+        storage.getRow(rowIndex, primitiveDataRepresentation::convertOut)
     }
 
-    override fun rowIterator() : Iterator<Any?> {
-        return values.iterator()
+    override fun setRow(rowIndex : Int, value : X) = ensureRowIndex(rowIndex) {
+        dataRepresentation.validate(value)
+        storage.setRow(rowIndex, primitiveDataRepresentation::convertIn, value)
     }
 
-    override fun setRow(rowIndex : Int, value : Any?) {
-        if (!header.type.isValidInternalUnchecked(value))
-            throw IllegalArgumentException()
-        values[rowIndex] = value
+    override fun setRows(rowIndex : Int, values : Collection<X>) = ensureRowsIndices(rowIndex, values.size) {
+        values.forEach { dataRepresentation.validate(it) }
+        storage.setRows(rowIndex, values.count(), primitiveDataRepresentation::convertIn, values.iterator()::next)
     }
 
-    override fun insertRow(rowIndex : Int, value : Any?) {
-        if (!header.type.isValidInternalUnchecked(value))
-            throw IllegalArgumentException()
-        values.add(rowIndex, value)
+    override fun clearRow(rowIndex : Int) = ensureRowIndex(rowIndex) {
+        storage.clearRow(rowIndex)
     }
 
-    override fun deleteRow(rowIndex : Int) {
-        values.removeAt(rowIndex)
+    override fun clearRows(rowIndex : Int, count : Int) = ensureRowsIndices(rowIndex, count) {
+        storage.clearRows(rowIndex, count)
     }
 
+    override fun insertRow(rowIndex : Int, value : X) = ensureRowIndex(rowIndex, true) {
+        dataRepresentation.validate(value)
+        storage.insertRow(rowIndex, primitiveDataRepresentation::convertIn, value)
+    }
+
+    override fun insertRows(rowIndex : Int, values : Collection<X>) = ensureRowIndex(rowIndex, true) {
+        values.forEach { dataRepresentation.validate(it) }
+        storage.insertRows(rowIndex, values.size, primitiveDataRepresentation::convertIn, values.iterator()::next)
+    }
+
+    override fun deleteRow(rowIndex : Int) = ensureRowIndex(rowIndex) {
+        storage.deleteRow(rowIndex)
+    }
+
+    override fun deleteRows(rowIndex : Int, count: Int) = ensureRowsIndices(rowIndex, count) {
+        storage.deleteRows(rowIndex, count)
+    }
 }
+

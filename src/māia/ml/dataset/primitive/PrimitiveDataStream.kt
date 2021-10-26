@@ -1,15 +1,16 @@
 package māia.ml.dataset.primitive
 
 import māia.util.map
-import māia.ml.dataset.DataColumnHeader
 import māia.ml.dataset.DataStream
 import māia.ml.dataset.mutable.WithMutableMetadata
 
 /**
  * TODO: What class does.
  *
+ * TODO: Reinstate.
+ *
  * @author Corey Sterling (csterlin at waikato dot ac dot nz)
- */
+ *
 class PrimitiveDataStream(
         headers : List<DataColumnHeader>,
         private val source : Iterator<List<Any?>>
@@ -31,3 +32,4 @@ class PrimitiveDataStream(
         }
     }
 }
+*/
