@@ -1,8 +1,6 @@
 package māia.ml.dataset.primitive
 
 import kotlinx.benchmark.*
-import māia.util.inlineRangeForLoop
-import org.openjdk.jmh.annotations.Group
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
@@ -39,11 +37,11 @@ open class SortBenchmark {
         val container = createContainer(params.containerType, params.NUM_COLS)
         params.toSort.forEachIndexed(container::append)
         val NUM_COLS = params.NUM_COLS
-        inlineRangeForLoop(NUM_COLS - 1) { headIndex ->
+        repeat(NUM_COLS - 1) { headIndex ->
             var minVal = container.get(headIndex)
             val headVal = minVal
             var minIndex = headIndex
-            inlineRangeForLoop(headIndex + 1, NUM_COLS) { nextIndex ->
+            for (nextIndex in headIndex + 1 until NUM_COLS) {
                 val nextVal = container.get(nextIndex)
                 if (nextVal < minVal) {
                     minVal = nextVal
@@ -55,7 +53,7 @@ open class SortBenchmark {
                 container.set(minIndex, headVal)
             }
         }
-        inlineRangeForLoop(NUM_COLS) {
+        repeat(NUM_COLS) {
             val expectedValue = it.toDouble()
             val actualValue = container.get(it)
             if (actualValue != expectedValue)

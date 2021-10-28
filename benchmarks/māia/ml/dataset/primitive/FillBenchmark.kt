@@ -1,7 +1,6 @@
 package māia.ml.dataset.primitive
 
 import kotlinx.benchmark.*
-import māia.util.inlineRangeForLoop
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
@@ -30,8 +29,8 @@ open class FillBenchmark {
         val container = createContainer(state.containerType, 1)
         val NUM_COLS = state.NUM_COLS
         val rand = Random(42)
-        inlineRangeForLoop(NUM_COLS) {
-            container.append(it, rand.nextDouble())
+        repeat(NUM_COLS) { columnIndex ->
+            container.append(columnIndex, rand.nextDouble())
         }
         if (container.size != NUM_COLS)
             throw Exception("Expected $NUM_COLS items but got ${container.size}")
@@ -43,8 +42,8 @@ open class FillBenchmark {
         val container = benchmark(state)
         val NUM_COLS = state.NUM_COLS
         val rand = Random(34)
-        inlineRangeForLoop(NUM_COLS) {
-            container.set(it, rand.nextDouble())
+        repeat(NUM_COLS) { columnIndex ->
+            container.set(columnIndex, rand.nextDouble())
         }
     }
 

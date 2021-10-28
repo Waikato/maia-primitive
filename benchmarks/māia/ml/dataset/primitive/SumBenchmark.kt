@@ -1,7 +1,6 @@
 package māia.ml.dataset.primitive
 
 import kotlinx.benchmark.*
-import māia.util.inlineRangeForLoop
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
@@ -42,8 +41,8 @@ open class SumBenchmark {
         val container = createContainer(state.containerType, state.NUM_COLS)
         state.values.forEachIndexed(container::append)
         var sum = 0.0
-        inlineRangeForLoop(state.NUM_COLS) {
-            sum += container.get(it)
+        repeat(state.NUM_COLS) { columnIndex ->
+            sum += container.get(columnIndex)
         }
         if (sum != state.expectedSum)
             throw Exception("Expected sum: ${state.expectedSum}, got: $sum")

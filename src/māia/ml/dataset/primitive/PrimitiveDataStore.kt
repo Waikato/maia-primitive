@@ -1,7 +1,6 @@
 package māia.ml.dataset.primitive
 
 import māia.util.identity
-import māia.util.inlineRangeForLoop
 import kotlin.math.max
 
 /**
@@ -37,8 +36,8 @@ open class PrimitiveDataStore<I> internal constructor(
         convert: (X) -> I,
         data: () -> X
     ) {
-        inlineRangeForLoop(rowIndex, rowIndex + count) {
-            storage[it] = convert(data())
+        for (index in rowIndex until rowIndex + count) {
+            storage[index] = convert(data())
         }
     }
 
@@ -47,8 +46,8 @@ open class PrimitiveDataStore<I> internal constructor(
     }
 
     internal inline fun clearRows(rowIndex : Int, count : Int) {
-        inlineRangeForLoop(rowIndex, count) {
-            storage[it] = clearSentinel
+        for (index in rowIndex until rowIndex + count) {
+            storage[index] = clearSentinel
         }
     }
 
@@ -74,8 +73,8 @@ open class PrimitiveDataStore<I> internal constructor(
             storage.copy(max(requiredSize, currentSize + currentSize / 2))
         val newIndex = rowIndex + count
         System.arraycopy(target.base, rowIndex, target.base, newIndex, size - rowIndex)
-        inlineRangeForLoop(rowIndex, newIndex) {
-            target[it] = convert(data())
+        for (index in rowIndex until newIndex) {
+            target[index] = convert(data())
         }
         storage = target
         size += count

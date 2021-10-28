@@ -7,9 +7,7 @@ import māia.ml.dataset.util.EmptyRow
 import māia.ml.dataset.util.appendColumn
 import māia.ml.dataset.util.appendRow
 import māia.util.assertType
-import māia.util.collect
 import māia.util.eval
-import māia.util.inlineRangeForLoop
 import māia.util.nextDoubleArray
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -129,11 +127,11 @@ open class RandomDisposeBenchmark {
         fun dataBatchBenchmark() = runBenchmark(
             eval {
                 val db = PrimitiveDataBatch("", numCols, numRows)
-                inlineRangeForLoop(numRows) {
+                repeat(numRows) {
                     db.appendRow(EmptyRow)
                 }
                 val rep = PrimitiveNumeric(false).canonicalRepresentation
-                inlineRangeForLoop(numCols) {
+                repeat(numCols) {
                     db.appendColumn("$it", rep, false) { 0.0 }
                 }
                 db
@@ -164,10 +162,9 @@ open class RandomDisposeBenchmark {
             crossinline numCols: T.() -> Int
         ): Double {
             // Copy source values into container
-            inlineRangeForLoop(array.size) { colIndex ->
-                val col = array[colIndex]
-                inlineRangeForLoop(col.size) { rowIndex ->
-                    container.set(colIndex, rowIndex, col[rowIndex])
+            array.forEachIndexed { columnIndex, column ->
+                column.forEachIndexed { rowIndex, value ->
+                    container.set(columnIndex, rowIndex, value)
                 }
             }
 

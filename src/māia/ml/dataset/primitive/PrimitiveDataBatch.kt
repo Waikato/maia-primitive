@@ -23,7 +23,6 @@ import māia.ml.dataset.type.standard.UntypedData
 import māia.ml.dataset.util.mustHaveEquivalentColumnStructureTo
 import māia.util.discard
 import māia.util.identity
-import māia.util.inlineRangeForLoop
 import kotlin.math.max
 
 /**
@@ -126,29 +125,29 @@ class PrimitiveDataBatch(
         values.forEach { it mustHaveEquivalentColumnStructureTo headersInternal }
 
         val valueIterator = values.iterator()
-        inlineRangeForLoop(values.size) { valueIndex ->
+        repeat(values.size) { valueIndex ->
             setRowInternal(rowIndex + valueIndex, valueIterator.next())
         }
     }
 
     private inline fun setRowInternal(rowIndex : Int, value : DataRow) {
-        inlineRangeForLoop(headersInternal.size) { columnIndex ->
-            val type = headersInternal[columnIndex].type
+        headersInternal.forEachIndexed { columnIndex, header ->
+            val type = header.type
             when (type) {
                 is Nominal<*, *, *, *> -> (data[columnIndex] as PrimitiveDataStore<Int>).setRow(
                     rowIndex,
                     ::identity,
-                    value.getValue((value.headers[columnIndex].type as Nominal<*, *, *, *>).indexRepresentation)
+                    value.getValue(type.indexRepresentation)
                 )
                 is Numeric<*, *> -> (data[columnIndex] as PrimitiveDataStore<Double>).setRow(
                     rowIndex,
                     ::identity,
-                    value.getValue((value.headers[columnIndex].type as Numeric<*, *>).canonicalRepresentation)
+                    value.getValue(type.canonicalRepresentation)
                 )
                 is UntypedData<*, *> -> (data[columnIndex] as PrimitiveDataStore<Any?>).setRow(
                     rowIndex,
                     ::identity,
-                    value.getValue((value.headers[columnIndex].type as UntypedData<*, *>).canonicalRepresentation)
+                    value.getValue(type.canonicalRepresentation)
                 )
                 else -> throw UnsupportedDataTypeError(type)
             }
@@ -175,38 +174,37 @@ class PrimitiveDataBatch(
         values.forEach { it mustHaveEquivalentColumnStructureTo headersInternal }
         // Insert empty values into the backing columns so we only need to iterate
         // through the given collection once
-        inlineRangeForLoop(headersInternal.size) { columnIndex ->
-            data[columnIndex].insertEmptyRows(rowIndex, values.size)
+        data.forEach {
+            it.insertEmptyRows(rowIndex, values.size)
         }
 
         // Because storage has already been allocated above, use setRowsInternal instead
         // of insertRowsInternal
-        val valueIterator = values.iterator()
-        inlineRangeForLoop(values.size) { valueIndex ->
-            setRowInternal(rowIndex + valueIndex, valueIterator.next())
+        values.forEachIndexed { valueIndex, row ->
+            setRowInternal(rowIndex + valueIndex, row)
         }
 
         numRows += values.size
     }
 
     private inline fun insertRowInternal(rowIndex : Int, value : DataRow) {
-        inlineRangeForLoop(headersInternal.size) { columnIndex ->
-            val type = headersInternal[columnIndex].type
+        headersInternal.forEachIndexed { columnIndex, header ->
+            val type = header.type
             when (type) {
                 is Nominal<*, *, *, *> -> (data[columnIndex] as PrimitiveDataStore<Int>).insertRow(
                     rowIndex,
                     ::identity,
-                    value.getValue((value.headers[columnIndex].type as Nominal<*, *, *, *>).indexRepresentation)
+                    value.getValue(type.indexRepresentation)
                 )
                 is Numeric<*, *> -> (data[columnIndex] as PrimitiveDataStore<Double>).insertRow(
                     rowIndex,
                     ::identity,
-                    value.getValue((value.headers[columnIndex].type as Numeric<*, *>).canonicalRepresentation)
+                    value.getValue(type.canonicalRepresentation)
                 )
                 is UntypedData<*, *> -> (data[columnIndex] as PrimitiveDataStore<Any?>).insertRow(
                     rowIndex,
                     ::identity,
-                    value.getValue((value.headers[columnIndex].type as UntypedData<*, *>).canonicalRepresentation)
+                    value.getValue(type.canonicalRepresentation)
                 )
                 else -> throw UnsupportedDataTypeError(type)
             }

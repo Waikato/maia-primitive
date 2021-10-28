@@ -26,7 +26,6 @@ import māia.ml.dataset.util.EmptyRow
 import māia.ml.dataset.util.appendColumn
 import māia.ml.dataset.util.appendRow
 import māia.util.error.UNREACHABLE_CODE
-import māia.util.inlineRangeForLoop
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -69,22 +68,22 @@ internal class PrimitiveDataBatchTest {
     @Test
     fun testCreateNumeric(): PrimitiveDataBatch {
         val db = PrimitiveDataBatch("", 123, 456)
-        inlineRangeForLoop(456) {
+        repeat(456) {
             db.appendRow(EmptyRow)
         }
         val rep = Numeric.PlaceHolder(false).canonicalRepresentation
-        inlineRangeForLoop(123) { colIndex ->
-            db.appendColumn("$colIndex", rep, false) { rowIndex ->
-                (456 * colIndex + rowIndex).toDouble()
+        repeat(123) { columnIndex ->
+            db.appendColumn("$columnIndex", rep, false) { rowIndex ->
+                (456 * columnIndex + rowIndex).toDouble()
             }
         }
         assertEquals(123, db.numColumns)
         assertEquals(456, db.numRows)
-        inlineRangeForLoop(123) { colIndex ->
-            val type = db.headers[colIndex].type
+        repeat(123) { columnIndex ->
+            val type = db.headers[columnIndex].type
             assertIs<PrimitiveNumeric>(type)
-            inlineRangeForLoop(456) { rowIndex ->
-                assertEquals((456 * colIndex + rowIndex).toDouble(), db.getValue(type.canonicalRepresentation, rowIndex))
+            repeat(456) { rowIndex ->
+                assertEquals((456 * columnIndex + rowIndex).toDouble(), db.getValue(type.canonicalRepresentation, rowIndex))
             }
         }
         return db
