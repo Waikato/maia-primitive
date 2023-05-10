@@ -1,6 +1,6 @@
 package maia.ml.dataset.primitive.type
 
-import maia.ml.dataset.primitive.convertValue
+import maia.ml.dataset.primitive.convertValue as convertValueUtil
 import maia.ml.dataset.primitive.handleMissingOnGet
 import maia.ml.dataset.type.DataRepresentation
 import maia.ml.dataset.type.standard.UntypedData
@@ -16,7 +16,7 @@ class PrimitiveUntypedRepresentation internal constructor():
     override fun convertIn(value : Any?) : Any? = value
     override fun convertOut(value : Any?) : Any? = handleMissingOnGet(value, {it is Missing}) { value }
     override fun clearSentinel() : Any = Missing
-    override fun <I> convertValue(value : I, fromRepresentation : DataRepresentation<*, PrimitiveUntyped, I>) : Any? = convertValue(value, fromRepresentation)
+    override fun <I> convertValue(value : I, fromRepresentation : DataRepresentation<*, PrimitiveUntyped, I>) : Any? = convertValueUtil(value, fromRepresentation)
 }
 
 /**

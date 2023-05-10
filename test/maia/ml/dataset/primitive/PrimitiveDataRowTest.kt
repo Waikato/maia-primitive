@@ -88,7 +88,7 @@ internal class PrimitiveDataRowTest {
     @Test
     fun deleteColumn() {
         val type = testRow.headers[2].type
-        assertIs<Nominal<*, *, *, *>>(type)
+        assertIs<Nominal<*, *, *, *, *>>(type)
         assertDoesNotThrow { testRow.deleteColumn(2, "class") }
         assertEquals(2, testRow.headers.size)
         assertThrows<UnownedRepresentationError> { testRow.getValue(type.canonicalRepresentation) }

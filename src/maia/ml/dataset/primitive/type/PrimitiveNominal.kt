@@ -1,12 +1,15 @@
 package maia.ml.dataset.primitive.type
 
-import maia.ml.dataset.primitive.convertValue
+import maia.ml.dataset.primitive.convertValue as convertValueUtil
 import maia.ml.dataset.primitive.handleMissingOnGet
 import maia.ml.dataset.type.DataRepresentation
 import maia.ml.dataset.type.EntropicRepresentation
+import maia.ml.dataset.type.standard.ClassProbabilities
 import maia.ml.dataset.type.standard.Nominal
 import maia.ml.dataset.type.standard.NominalCanonicalRepresentation
 import maia.ml.dataset.type.standard.NominalIndexRepresentation
+import maia.ml.dataset.type.standard.NominalLabelRepresentation
+import maia.util.maxWithIndex
 import java.math.BigInteger
 
 /**
@@ -22,12 +25,30 @@ internal inline fun <X> PrimitiveDataRepresentation<*, *, out X, in Int>.handleM
  */
 class PrimitiveNominalCanonicalRepresentation internal constructor():
     NominalCanonicalRepresentation<PrimitiveNominalCanonicalRepresentation, PrimitiveNominal>(),
-    PrimitiveDataRepresentation<PrimitiveNominalCanonicalRepresentation, PrimitiveNominal, String, Int>
+    PrimitiveDataRepresentation<PrimitiveNominalCanonicalRepresentation, PrimitiveNominal, ClassProbabilities, Int>
+{
+    override fun convertIn(value: ClassProbabilities) : Int = value.maxWithIndex().first
+    override fun convertOut(value: Int) : ClassProbabilities = handleMissingNominal(value) { dataType.oneHot(value) }
+    override fun clearSentinel() : Int = -1
+    override fun <I> convertValue(
+        value : I,
+        fromRepresentation : DataRepresentation<*, PrimitiveNominal, I>
+    ) : ClassProbabilities {
+        return convertValueUtil(value, fromRepresentation)
+    }
+}
+
+/**
+ * TODO
+ */
+class PrimitiveNominalLabelRepresentation internal constructor():
+    NominalLabelRepresentation<PrimitiveNominalLabelRepresentation, PrimitiveNominal>(),
+    PrimitiveDataRepresentation<PrimitiveNominalLabelRepresentation, PrimitiveNominal, String, Int>
 {
     override fun convertIn(value: String) : Int = dataType.indexOf(value)
     override fun convertOut(value: Int) : String = handleMissingNominal(value, dataType::get)
     override fun clearSentinel() : Int = -1
-    override fun <I> convertValue(value : I, fromRepresentation : DataRepresentation<*, PrimitiveNominal, I>) : String = convertValue(value, fromRepresentation)
+    override fun <I> convertValue(value : I, fromRepresentation : DataRepresentation<*, PrimitiveNominal, I>) : String = convertValueUtil(value, fromRepresentation)
 }
 
 /**
@@ -40,7 +61,7 @@ class PrimitiveNominalEntropicRepresentation internal constructor():
     override fun convertIn(value : BigInteger) : Int = value.toInt()
     override fun convertOut(value : Int) : BigInteger = handleMissingNominal(value) { it.toBigInteger() }
     override fun clearSentinel() : Int = -1
-    override fun <I> convertValue(value : I, fromRepresentation : DataRepresentation<*, PrimitiveNominal, I>) : BigInteger = convertValue(value, fromRepresentation)
+    override fun <I> convertValue(value : I, fromRepresentation : DataRepresentation<*, PrimitiveNominal, I>) : BigInteger = convertValueUtil(value, fromRepresentation)
 }
 
 /**
@@ -53,7 +74,7 @@ class PrimitiveNominalIndexRepresentation internal constructor():
     override fun convertIn(value : Int) : Int = value
     override fun convertOut(value : Int) : Int = handleMissingNominal(value) { it }
     override fun clearSentinel() : Int = -1
-    override fun <I> convertValue(value : I, fromRepresentation : DataRepresentation<*, PrimitiveNominal, I>) : Int = convertValue(value, fromRepresentation)
+    override fun <I> convertValue(value : I, fromRepresentation : DataRepresentation<*, PrimitiveNominal, I>) : Int = convertValueUtil(value, fromRepresentation)
 }
 
 /**
@@ -62,8 +83,15 @@ class PrimitiveNominalIndexRepresentation internal constructor():
 class PrimitiveNominal(
     supportsMissingValues: Boolean,
     vararg categories : String
-): Nominal<PrimitiveNominal, PrimitiveNominalCanonicalRepresentation, PrimitiveNominalEntropicRepresentation, PrimitiveNominalIndexRepresentation>(
+): Nominal<
+        PrimitiveNominal,
+        PrimitiveNominalCanonicalRepresentation,
+        PrimitiveNominalLabelRepresentation,
+        PrimitiveNominalEntropicRepresentation,
+        PrimitiveNominalIndexRepresentation
+>(
     PrimitiveNominalCanonicalRepresentation(),
+    PrimitiveNominalLabelRepresentation(),
     PrimitiveNominalEntropicRepresentation(),
     PrimitiveNominalIndexRepresentation(),
     supportsMissingValues,

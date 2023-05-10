@@ -1,5 +1,6 @@
 package maia.ml.dataset.primitive.type
 
+import maia.ml.dataset.primitive.convertValue as convertValueUtil
 import maia.ml.dataset.primitive.handleMissingOnGet
 import maia.ml.dataset.type.DataRepresentation
 import maia.ml.dataset.type.standard.Numeric
@@ -15,7 +16,7 @@ class PrimitiveNumericCanonicalRepresentation internal constructor():
     override fun convertIn(value : Double) : Double = value
     override fun convertOut(value : Double) : Double = handleMissingOnGet(value, Double::isNaN) { it }
     override fun clearSentinel() : Double = Double.NaN
-    override fun <I> convertValue(value : I, fromRepresentation : DataRepresentation<*, PrimitiveNumeric, I>) : Double = convertValue(value, fromRepresentation)
+    override fun <I> convertValue(value : I, fromRepresentation : DataRepresentation<*, PrimitiveNumeric, I>) : Double = convertValueUtil(value, fromRepresentation)
 }
 
 /**

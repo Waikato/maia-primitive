@@ -134,7 +134,7 @@ class PrimitiveDataBatch(
         headersInternal.forEachIndexed { columnIndex, header ->
             val type = header.type
             when (type) {
-                is Nominal<*, *, *, *> -> (data[columnIndex] as PrimitiveDataStore<Int>).setRow(
+                is Nominal<*, *, *, *, *> -> (data[columnIndex] as PrimitiveDataStore<Int>).setRow(
                     rowIndex,
                     ::identity,
                     value.getValue(type.indexRepresentation)
@@ -191,7 +191,7 @@ class PrimitiveDataBatch(
         headersInternal.forEachIndexed { columnIndex, header ->
             val type = header.type
             when (type) {
-                is Nominal<*, *, *, *> -> (data[columnIndex] as PrimitiveDataStore<Int>).insertRow(
+                is Nominal<*, *, *, *, *> -> (data[columnIndex] as PrimitiveDataStore<Int>).insertRow(
                     rowIndex,
                     ::identity,
                     value.getValue(type.indexRepresentation)

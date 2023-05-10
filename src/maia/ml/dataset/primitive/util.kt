@@ -18,6 +18,7 @@ import maia.ml.dataset.type.EntropicRepresentation
 import maia.ml.dataset.type.standard.Nominal
 import maia.ml.dataset.type.standard.NominalCanonicalRepresentation
 import maia.ml.dataset.type.standard.NominalIndexRepresentation
+import maia.ml.dataset.type.standard.NominalLabelRepresentation
 import maia.ml.dataset.type.standard.Numeric
 import maia.ml.dataset.type.standard.NumericCanonicalRepresentation
 import maia.ml.dataset.type.standard.UntypedData
@@ -34,10 +35,11 @@ internal fun <T> newPrimitiveRepresentation(
 ): PrimitiveDataRepresentation<*, *, T, *> {
     val type = representation.dataType
     return when(type) {
-        is Nominal<*, *, *, *> -> {
+        is Nominal<*, *, *, *, *> -> {
             val newType = PrimitiveNominal(supportsMissingValues, *type.toTypedArray())
             when (representation) {
                 is NominalCanonicalRepresentation<*, *> -> newType.canonicalRepresentation
+                is NominalLabelRepresentation<*, *> -> newType.labelRepresentation
                 is NominalIndexRepresentation<*, *> -> newType.indexRepresentation
                 is EntropicRepresentation<*, *> -> newType.entropicRepresentation
                 else -> throw UnsupportedRepresentationError(representation)
